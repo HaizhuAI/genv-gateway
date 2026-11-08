@@ -1,0 +1,3 @@
+Sanitized source drop. Runtime secrets (accounts, API keys, tokens,
+bot credentials, traffic captures) removed; *.json ship as empty
+stubs - populated at runtime.

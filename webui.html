@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GenV Gateway · 创作台</title>
+<style>
+:root{--bg:#0b0e14;--card:#141925;--line:#232a3a;--txt:#e6eaf2;--dim:#8b93a7;--acc:#6c5ce7;--acc2:#00d2a8;--err:#ff5470}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--txt);font:14px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--acc2)}
+header{display:flex;align-items:center;gap:16px;padding:14px 24px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:9}
+header b{font-size:16px}
+nav{display:flex;gap:6px}
+nav button{background:none;border:1px solid var(--line);color:var(--dim);padding:6px 14px;border-radius:8px;cursor:pointer}
+nav button.on{color:var(--txt);border-color:var(--acc);background:#1b2233}
+main{padding:20px 24px;max-width:1180px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+label{display:block;color:var(--dim);font-size:12px;margin:12px 0 4px}
+input,select,textarea{width:100%;background:#0d1120;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:9px 10px;font:inherit}
+textarea{min-height:90px;resize:vertical}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1;min-width:130px}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:10px 18px;cursor:pointer;font:inherit}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--dim)}
+.btn.danger{background:none;border:1px solid var(--err);color:var(--err)}
+.btn:disabled{opacity:.5;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:500;font-size:12px}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px}
+.tag.ok{background:#0d3;background:#0d3a2c;color:var(--acc2)}
+.tag.bad{background:#3a1622;color:var(--err)}
+.tag.run{background:#1b2a4a;color:#7aa7ff}
+.stat{display:inline-flex;flex-direction:column;background:#0d1120;border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin:0 10px 10px 0}
+.stat b{font-size:20px}
+.stat span{color:var(--dim);font-size:12px}
+.job{display:flex;gap:12px;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#0d1120;align-items:center}
+.job .s{width:10px;height:10px;border-radius:50%;flex:none}
+.job .meta{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.small{font-size:12px;color:var(--dim)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.topline{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+h3{margin-bottom:10px}
+.chip{cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <b>GenV Gateway</b>
+  <nav>
+    <button class="on" data-t="studio">创作台</button>
+    <button data-t="pool">号池</button>
+    <button data-t="keys">API Key</button>
+    <button data-t="bot">QQ Bot</button>
+    <button data-t="jobs">任务</button>
+  </nav>
+  <span style="flex:1"></span>
+  <input id="ak" class="mono" style="width:260px" placeholder="Admin Key (GATEWAY_API_KEY)" type="password">
+  <button class="btn ghost" onclick="saveAk()">保存</button>
+</header>
+<main>
+<!-- ============ STUDIO ============ -->
+<section id="studio">
+ <div class="card">
+  <div class="topline"><h3>创作台</h3><span class="small">API Key：<input id="uk" class="mono" style="width:240px;display:inline-block" placeholder="sk-…（空则用 admin）"></span></div>
+  <label>提示词</label>
+  <textarea id="prompt" placeholder="A cinematic shot of …"></textarea>
+  <div class="row">
+    <div><label>模型</label><select id="model"></select></div>
+    <div><label>比例</label><select id="size"><option>9:16</option><option>16:9</option><option>1:1</option><option>4:3</option><option>3:4</option></select></div>
+    <div><label>时长(s)</label><select id="dur"><option value="">默认</option><option>6</option><option>10</option><option>15</option></select></div>
+    <div><label>分辨率</label><select id="res"><option value="">默认</option><option>480p</option><option>720p</option><option>1080p</option><option>1K</option><option>2K</option></select></div>
+  </div>
+  <div class="row">
+    <div><label>Turnstile Token（仅 web 模型需要）</label><input id="ts" class="mono" placeholder="可留空"></div>
+    <div><label>参考图 URL（可选）</label><input id="ref" class="mono" placeholder="图片模型转视频用"></div>
+  </div>
+  <div class="row" style="margin-top:14px">
+    <div><label>等待秒数（同步返回）</label><input id="wait" type="number" value="240" min="0" max="600"></div>
+    <div style="display:flex;align-items:flex-end"><button class="btn" style="width:100%" onclick="submit()">生成</button></div>
+  </div>
+ </div>
+ <div class="card">
+  <h3>最近生成</h3>
+  <div id="studioJobs"></div>
+ </div>
+</section>
+
+<!-- ============ POOL ============ -->
+<section id="pool" hidden>
+ <div class="card">
+  <div class="topline"><h3>荣誉号池（app 平台账号）</h3>
+   <div>
+    <input id="refillN" type="number" value="3" min="1" max="10" style="width:70px;display:inline-block">
+    <button class="btn" onclick="refill()">一键补充号池</button>
+    <button class="btn ghost" onclick="loadPool()">刷新</button>
+   </div></div>
+  <div id="poolStats"></div>
+  <table><thead><tr><th>邮箱</th><th>池</th><th>已用/免费</th><th>剩余</th><th>创建</th><th>状态</th></tr></thead>
+  <tbody id="poolBody"></tbody></table>
+ </div>
+ <div class="card">
+  <h3>自动补充策略</h3>
+  <div class="row">
+    <div><label>最低可用账号数</label><input id="polMin" type="number" min="0"></div>
+    <div><label>每轮补充数量</label><input id="polBatch" type="number" min="1" max="10"></div>
+    <div><label>自动补充</label><select id="polAuto"><option value="1">开</option><option value="0">关</option></select></div>
+    <div style="display:flex;align-items:flex-end"><button class="btn" onclick="savePolicy()">保存策略</button></div>
+  </div>
+  <p class="small" style="margin-top:10px">低于「最低可用」时后台自动走 mail.tm+OTP 注册 GenV-APP 账号补池（每号约 5 次免广告 0 积分生成 + 10 credits + quota×100）。</p>
+ </div>
+ <div class="card"><h3>上游配额（当前账号）</h3><pre id="quota" class="mono small"></pre></div>
+</section>
+
+<!-- ============ KEYS ============ -->
+<section id="keys" hidden>
+ <div class="card">
+  <h3>签发 API Key</h3>
+  <div class="row">
+    <div><label>名称</label><input id="kn" placeholder="如: qq-bot / team-a"></div>
+    <div><label>允许模型（逗号分隔，* 全部）</label><input id="km" value="*" class="mono"></div>
+    <div><label>调用上限（空=不限）</label><input id="kl" type="number" min="0"></div>
+    <div style="display:flex;align-items:flex-end"><button class="btn" onclick="mkKey()">签发</button></div>
+  </div>
+ </div>
+ <div class="card">
+  <table><thead><tr><th>Key</th><th>名称</th><th>模型</th><th>已用/上限</th><th>创建</th><th>状态</th><th></th></tr></thead>
+  <tbody id="keyBody"></tbody></table>
+ </div>
+</section>
+
+<!-- ============ BOT ============ -->
+<section id="bot" hidden>
+ <div class="card">
+  <div class="topline"><h3>QQ 官方机器人（AppID + AppSecret）</h3><button class="btn ghost" onclick="loadBot()">刷新</button></div>
+  <div id="botStatus"></div>
+  <p class="small" style="margin-top:8px">在 <a href="https://q.qq.com" target="_blank">q.qq.com</a> 创建机器人拿 AppID / AppSecret 填入即可，保存后自动连接官方网关。
+  群内 @机器人 或私聊发指令即触发，无需配置任何 QQ 号/群号。</p>
+ </div>
+ <div class="card">
+  <h3>接入配置</h3>
+  <div class="row">
+    <div><label>启用</label><select id="bcOn"><option value="1">开</option><option value="0">关</option></select></div>
+    <div><label>AppID</label><input id="bcApp" class="mono" placeholder="102000000"></div>
+    <div><label>AppSecret</label><input id="bcSec" class="mono" placeholder="不修改留 •••"></div>
+    <div><label>沙箱环境</label><select id="bcSb"><option value="0">正式</option><option value="1">沙箱</option></select></div>
+    <div style="display:flex;align-items:flex-end"><button class="btn" onclick="saveBot()">保存并连接</button></div>
+  </div>
+ </div>
+ <div class="card">
+  <h3>连通性测试</h3>
+  <div class="row">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="btn" onclick="testBot()">验证凭证</button>
+      <span id="btOut" class="small"></span></div>
+  </div>
+  <p class="small" style="margin-top:8px">bot 指令：/help · /model · /&lt;模型名&gt; &lt;提示词&gt;（如 /muse-video 一只猫）· /pool · /refill</p>
+ </div>
+</section>
+
+<!-- ============ JOBS ============ -->
+<section id="jobs" hidden>
+ <div class="card">
+  <div class="topline"><h3>任务</h3><button class="btn ghost" onclick="loadJobs()">刷新</button></div>
+  <div id="jobList"></div>
+ </div>
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const AK=()=>localStorage.gw_ak||"", UK=()=>$('#uk').value.trim()||AK();
+const H=()=>({Authorization:'Bearer '+AK(), 'Content-Type':'application/json'});
+const KH=()=>({Authorization:'Bearer '+UK(), 'Content-Type':'application/json'});
+$('#ak').value=localStorage.gw_ak||"";
+function saveAk(){localStorage.gw_ak=$('#ak').value.trim();toast('已保存')}
+
+$$('nav button').forEach(b=>b.onclick=()=>{
+ $$('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+ $$('main section').forEach(s=>s.hidden=s.id!==b.dataset.t);
+ load(b.dataset.t)});
+function load(t){({studio:()=>{},pool:loadPool,keys:loadKeys,bot:loadBot,jobs:loadJobs})[t]()}
+function toast(m){let d=document.createElement('div');d.textContent=m;
+ Object.assign(d.style,{position:'fixed',bottom:'20px',left:'50%',transform:'translateX(-50%)',
+ background:'#222a3d',padding:'10px 20px',borderRadius:'8px',zIndex:99});
+ document.body.appendChild(d);setTimeout(()=>d.remove(),2500)}
+
+async function api(p,m='GET',body){
+ const r=await fetch(p,{method:m,headers:H(),body:body?JSON.stringify(body):null});
+ return r.json()}
+
+/* ---- studio ---- */
+let MODELS={};
+async function loadModels(){
+ const r=await (await fetch('/v1/models',{headers:KH()})).json();
+ MODELS={};const sel=$('#model');sel.innerHTML='';
+ (r.data||[]).forEach(m=>{MODELS[m.id]=m;
+  const o=document.createElement('option');o.value=m.id;
+  const ch=m.channel==='mobile'?'📱':'🌐';
+  o.textContent=`${ch} ${m.id}${m.turnstile?' ⚠️turnstile':''}${m.free?' ·免费':''}`;
+  sel.appendChild(o)});
+ sel.value=[...sel.options].find(o=>o.value==='muse-video')?'muse-video':sel.options[0]?.value;}
+function jobHtml(j){
+ const st=j.status,c=st==='completed'?'var(--acc2)':st==='failed'?'var(--err)':'#7aa7ff';
+ const link=j.url?`<a href="${j.url}" target="_blank">下载</a>`:(j.error?`<span style="color:var(--err)">${j.error.code||''}</span>`:'');
+ return `<div class="job"><span class="s" style="background:${c}"></span>
+  <div class="meta"><b>${j.model||''}</b> <span class="small">${j.id}</span><br>
+  <span class="small">${j.fields?.prompt||''}</span></div>
+  <span class="tag ${st==='completed'?'ok':st==='failed'?'bad':'run'}">${st}</span>${link}</div>`}
+async function submit(){
+ const mid=$('#model').value,m=MODELS[mid]||{};
+ const body={model:mid,prompt:$('#prompt').value};
+ if(m.type==='image'){body.size=$('#size').value==='9:16'?'1024x1536':$('#size').value==='16:9'?'1536x1024':'1024x1024';if($('#res').value)body.resolution=$('#res').value}
+ else{body.size=$('#size').value;if($('#dur').value)body.seconds=+$('#dur').value;if($('#res').value)body.resolution=$('#res').value;if($('#ref').value)body.image_url=$('#ref').value}
+ if($('#ts').value)body.turnstile_token=$('#ts').value;
+ const ep=m.type==='image'?'/v1/images/generations':'/v1/videos';
+ const h=KH();if(+$('#wait').value)h['X-Wait']=+$('#wait').value;
+ const d=$('#studioJobs');d.insertAdjacentHTML('afterbegin',`<div class="job"><span class="s" style="background:#7aa7ff"></span><div class="meta">提交中…</div></div>`);
+ try{
+  const r=await fetch(ep,{method:'POST',headers:h,body:JSON.stringify(body)});
+  const j=await r.json();
+  d.firstChild.outerHTML=j.error?`<div class="job"><span class="s" style="background:var(--err)"></span><div class="meta">${j.error.message}</div></div>`:jobHtml(j);
+ }catch(e){d.firstChild.outerHTML=`<div class="job"><div class="meta">请求失败 ${e}</div></div>`}
+ loadJobs()}
+
+/* ---- pool ---- */
+async function loadPool(){
+ const s=await api('/admin/state');if(s.error){$('#poolStats').innerHTML=`<span class="tag bad">${s.error.message}</span>`;return}
+ $('#poolStats').innerHTML=
+  `<span class="stat"><b>${s.accounts_usable}</b><span>可用账号</span></span>
+   <span class="stat"><b>${s.accounts.filter(a=>a.honor&&!a.ad_gated).length}</b><span>荣誉池可用</span></span>
+   <span class="stat"><b>${s.accounts_total}</b><span>账号总数</span></span>
+   <span class="stat"><b>${s.accounts.reduce((a,b)=>a+b.free_left,0)}</b><span>剩余免费次数</span></span>
+   <span class="stat"><b>${s.policy.min_usable}</b><span>最低可用(阈值)</span></span>`;
+ $('#poolBody').innerHTML=s.accounts.map(a=>
+  `<tr><td class="mono">${a.email}</td>
+   <td>${a.honor?'<span class="tag ok">荣誉</span>':'<span class="tag run">普通</span>'}</td>
+   <td>${a.gens_used}/${s.free_gens_per_account}</td><td>${a.free_left}</td>
+   <td class="small">${a.created?new Date(a.created*1000).toLocaleString():'-'}</td>
+   <td>${a.ad_gated?'<span class="tag bad">广告门</span>':'<span class="tag ok">可用</span>'}</td></tr>`).join('');
+ $('#polMin').value=s.policy.min_usable;$('#polBatch').value=s.policy.refill_batch;
+ $('#polAuto').value=s.policy.auto?'1':'0';
+ $('#quota').textContent=JSON.stringify(s.quota,null,1)}
+async function refill(){
+ const n=+$('#refillN').value||3;toast(`开始补充 ${n} 个账号…`);
+ const r=await api('/admin/pool/refill','POST',{n});
+ toast(`已建 ${r.created?.length||0} 个`+(r.stopped?`（${r.stopped}）`:''));loadPool()}
+async function savePolicy(){
+ const r=await api('/admin/pool/policy','PUT',
+  {min_usable:+$('#polMin').value,refill_batch:+$('#polBatch').value,auto:$('#polAuto').value==='1'});
+ toast('策略已保存');loadPool()}
+
+/* ---- keys ---- */
+async function loadKeys(){
+ const r=await api('/admin/keys');if(r.error)return;
+ $('#keyBody').innerHTML=(r.data||[]).map(k=>
+  `<tr><td class="mono chip" title="点击复制" onclick="navigator.clipboard.writeText('${k.key}')">${k.key.slice(0,14)}…</td>
+   <td>${k.name||''}</td><td class="small">${k.models==='*'?'全部':k.models}</td>
+   <td>${k.used}/${k.limit??'∞'}</td><td class="small">${new Date(k.created*1000).toLocaleDateString()}</td>
+   <td>${k.revoked?'<span class="tag bad">已吊销</span>':'<span class="tag ok">有效</span>'}</td>
+   <td><button class="btn danger" onclick="rmKey('${k.id}')">删除</button></td></tr>`).join('')}
+async function mkKey(){
+ const body={name:$('#kn').value,models:$('#km').value.trim()||'*',
+  limit:$('#kl').value?+$('#kl').value:null};
+ const r=await api('/admin/keys','POST',body);
+ if(r.key){navigator.clipboard.writeText(r.key);toast('已签发并复制: '+r.key.slice(0,16)+'…')}
+ loadKeys()}
+async function rmKey(id){if(!confirm('删除此 key?'))return;await api('/admin/keys/'+id,'DELETE');loadKeys()}
+
+/* ---- bot ---- */
+async function loadBot(){
+ const s=await api('/admin/bot/status');const q=s.qq||{};
+ $('#botStatus').innerHTML=
+  `<span class="stat"><b>${q.connected?'<span style="color:var(--acc2)">在线</span>':'<span style="color:var(--err)">离线</span>'}</b><span>网关状态</span></span>
+   <span class="stat"><b>${q.bot?('@'+(q.bot.username||q.bot.id)):'—'}</b><span>Bot 账号</span></span>
+   <span class="stat"><b>${q.reconnects||0}</b><span>重连次数</span></span>`+
+  (q.error?`<span class="tag bad">${q.error}</span>`:'')+
+  (q.last_event?`<span class="small" style="display:block;margin-top:6px">最近事件 ${new Date(q.last_event*1000).toLocaleString()}</span>`:'');
+ const c=await api('/admin/bot/config');
+ $('#bcOn').value=c.enabled?'1':'0';$('#bcApp').value=c.appid||'';
+ $('#bcSec').value=c.appsecret||'';$('#bcSb').value=c.sandbox?'1':'0'}
+async function saveBot(){
+ const body={enabled:$('#bcOn').value==='1',appid:$('#bcApp').value.trim(),
+  sandbox:$('#bcSb').value==='1'};
+ const sec=$('#bcSec').value.trim();if(sec)body.appsecret=sec;
+ await api('/admin/bot/config','PUT',body);
+ toast('已保存，后台自动重连');setTimeout(loadBot,3000)}
+async function testBot(){
+ $('#btOut').textContent='验证中…';
+ const r=await api('/admin/bot/test','POST',{});
+ $('#btOut').innerHTML=r.ok?`<span style="color:var(--acc2)">✓ ${r.message}</span>`
+  :`<span style="color:var(--err)">✗ ${r.message}</span>`}
+
+/* ---- jobs ---- */
+async function loadJobs(){
+ const r=await (await fetch('/v1/jobs',{headers:KH()})).json();
+ $('#jobList').innerHTML=(r.data||[]).map(jobHtml).join('')||'<span class="small">暂无任务</span>'}
+
+loadModels();load('studio');
+setInterval(()=>{if(!$('#jobs').hidden)loadJobs()},15000);
+</script>
+</body>
+</html>

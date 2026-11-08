@@ -1,0 +1,8 @@
+{
+ "accounts": {},
+ "policy": {
+  "min_usable": 3,
+  "refill_batch": 3,
+  "auto": true
+ }
+}
